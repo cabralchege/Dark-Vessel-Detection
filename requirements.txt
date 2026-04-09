@@ -1,0 +1,13 @@
+gradio>=4.29.0
+uvicorn>=0.34.0
+opencv-python>=4.8.0
+numpy>=1.24.0
+torch>=2.0.0
+ultralytics>=8.0.196
+sahi>=0.11.12
+folium>=0.14.0
+geopy>=2.3.0
+aiohttp>=3.8.0
+nest-asyncio>=1.5.0
+earthengine-api>=0.1.400
+geemap>=0.30.0
