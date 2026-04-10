@@ -30,6 +30,8 @@ Global, historical AIS data is typically locked behind commercial licenses costi
 
 The geographic matching algorithm mathematically proves that *if* a commercial AIS stream is connected, the cross-referencing logic successfully separates legal vessels from dark vessels. The system is also designed to be easily extensible to read open-source US Coast Guard (MarineCadastre) CSV files for localized historical analysis.
 
+## Deployment
+This model has been deployed at [https://huggingface.co/spaces/cabralchege/Optical-Dark-Vessel-Detection]
 ## Installation & Setup
 
 **1. Clone the repository:**
