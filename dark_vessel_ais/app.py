@@ -96,26 +96,71 @@ def analyze_location(lat, lon, date_str, buffer_km, use_sahi, radius_km, use_rea
     # RETURN THE ANNOTATED IMAGE INSTEAD OF THE THUMBNAIL URL
     return report, map_path, annotated_img_path
 
+def process_uploaded_image(img_path, use_sahi):
+    """Takes a user-uploaded image, runs YOLO, and draws boxes."""
+    if img_path is None:
+        return "⚠️ Please upload an image.", None
+        
+    print("📸 Scanning manual upload...")
+    
+    # 1. Run YOLO detection
+    boxes, scores, (img_h, img_w) = detector.detect(img_path, use_sahi=use_sahi)
+    
+    # 2. Draw bright red boxes around the ships
+    annotated_img = cv2.imread(img_path)
+    for box in boxes:
+        x1, y1, x2, y2 = map(int, box)
+        cv2.rectangle(annotated_img, (x1, y1), (x2, y2), (0, 0, 255), 3) # 3 is thickness
+        
+    # 3. Save the annotated image to a temporary file
+    out_path = tempfile.NamedTemporaryFile(suffix='.jpg', delete=False).name
+    cv2.imwrite(out_path, annotated_img)
+    
+    # 4. Generate a quick text report
+    report = f"### ✅ Manual Scan Complete\n"
+    report += f"**Detected {len(boxes)} vessels in the uploaded image.**\n"
+    
+    return report, out_path
+
 # Simple Gradio Interface
-iface = gr.Interface(
+# TAB 1: Your original Map & AIS tool
+map_tool = gr.Interface(
     fn=analyze_location,
     inputs=[
-        gr.Number(label="Latitude", value=34.0),
-        gr.Number(label="Longitude", value=-119.0),
-        gr.Textbox(label="Date (YYYY-MM-DD)", value="2024-01-01"),
+        gr.Number(label="Latitude", value=33.740),
+        gr.Number(label="Longitude", value=-118.250),
+        gr.Textbox(label="Date (YYYY-MM-DD)", value="2024-01-15"),
         gr.Slider(label="Search Radius (km)", minimum=1, maximum=50, value=10, step=1),
         gr.Checkbox(label="Use SAHI (tiled inference)", value=True),
         gr.Slider(label="AIS Matching Radius (km)", minimum=0.1, maximum=5.0, value=1.0, step=0.1),
-        gr.Checkbox(label="Use Real AIS Data", value=False),  # Set to False for testing
+        gr.Checkbox(label="Use Real AIS Data", value=False)
     ],
     outputs=[
-        gr.Markdown(label="📈 Detection Report"),
-        gr.HTML(label="🗺️ Interactive Map"),
-        gr.Image(label="📸 Satellite Preview", type="filepath"),
+        gr.Markdown(label="Detection Report"),
+        gr.HTML(label="Interactive Map"),
+        gr.Image(label="Satellite Pass")
+    ]
+)
+
+# TAB 2: The new Manual Image Upload tool
+upload_tool = gr.Interface(
+    fn=process_uploaded_image,
+    inputs=[
+        gr.Image(type="filepath", label="Upload Satellite Image (.jpg or .png)"),
+        gr.Checkbox(label="Use SAHI (Recommended for tiny ships)", value=True)
     ],
-    title="🛰️ Dark Vessel Detector",
-    description="Pull satellite imagery, detect vessels, cross-reference with AIS to identify dark vessels.",
+    outputs=[
+        gr.Markdown(label="Scan Results"),
+        gr.Image(label="Annotated Image")
+    ]
+)
+
+# Combine them into a Tabbed App!
+app = gr.TabbedInterface(
+    [map_tool, upload_tool], 
+    ["🌍 Live Map Search", "📸 Manual Image Scan"],
+    title="Dark Vessel Detection System"
 )
 
 if __name__ == "__main__":
-    iface.launch(server_name="0.0.0.0", server_port=7862, share=True)
+    app.launch(share=True)
